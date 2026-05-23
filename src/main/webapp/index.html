@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MD-Searcher</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+            min-height: 100vh;
+        }
+
+        header {
+            background: #2c3e50;
+            color: #fff;
+            padding: 20px 40px;
+        }
+
+        header h1 {
+            font-size: 1.6rem;
+            letter-spacing: 0.03em;
+        }
+
+        header p {
+            font-size: 0.85rem;
+            opacity: 0.7;
+            margin-top: 4px;
+        }
+
+        .search-container {
+            max-width: 760px;
+            margin: 40px auto 0;
+            padding: 0 20px;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+        }
+
+        #searchInput {
+            flex: 1;
+            padding: 12px 16px;
+            font-size: 1rem;
+            border: 2px solid #dce1e7;
+            border-radius: 6px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        #searchInput:focus {
+            border-color: #2c3e50;
+        }
+
+        #searchBtn {
+            padding: 12px 24px;
+            font-size: 1rem;
+            background: #2c3e50;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        #searchBtn:hover {
+            background: #3d5166;
+        }
+
+        #status {
+            margin-top: 14px;
+            font-size: 0.88rem;
+            color: #666;
+            min-height: 20px;
+        }
+
+        #results {
+            max-width: 760px;
+            margin: 20px auto 60px;
+            padding: 0 20px;
+        }
+
+        /* Upload Section Styles */
+        .upload-container {
+            max-width: 760px;
+            margin: 40px auto 0;
+            padding: 20px;
+            background: #fff;
+            border: 1px dashed #cbd5e0;
+            border-radius: 8px;
+        }
+
+        .upload-container h2 {
+            font-size: 1.1rem;
+            margin-bottom: 12px;
+            color: #2c3e50;
+        }
+
+        .upload-box {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        #fileInput {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #dce1e7;
+            border-radius: 4px;
+        }
+
+        #uploadBtn {
+            padding: 10px 20px;
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        #uploadBtn:hover {
+            background: #2ecc71;
+        }
+
+        #uploadStatus {
+            margin-top: 10px;
+            font-size: 0.85rem;
+        }
+
+        .success { color: #27ae60; }
+        .error { color: #e74c3c; }
+
+        .result-card {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 18px 22px;
+            margin-bottom: 14px;
+            transition: box-shadow 0.2s;
+        }
+
+        .result-card:hover {
+            box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+        }
+
+        .result-title a {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1a6bb5;
+            text-decoration: none;
+        }
+
+        .result-title a:hover {
+            text-decoration: underline;
+        }
+
+        .result-score {
+            display: inline-block;
+            margin-left: 10px;
+            font-size: 0.75rem;
+            background: #eef2f7;
+            color: #555;
+            padding: 2px 8px;
+            border-radius: 12px;
+            vertical-align: middle;
+        }
+
+        .result-snippet {
+            margin-top: 8px;
+            font-size: 0.9rem;
+            color: #555;
+            line-height: 1.5;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 40px 0;
+            color: #888;
+            font-size: 1rem;
+        }
+
+        /* Document viewer modal */
+        #modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 100;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+
+        #modal.open {
+            display: flex;
+        }
+
+        #modalContent {
+            background: #fff;
+            border-radius: 10px;
+            max-width: 800px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            padding: 30px 36px;
+            position: relative;
+        }
+
+        #modalClose {
+            position: absolute;
+            top: 14px;
+            right: 18px;
+            font-size: 1.4rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #666;
+            line-height: 1;
+        }
+
+        #modalClose:hover { color: #333; }
+
+        #modalBody h1, #modalBody h2, #modalBody h3 {
+            margin: 16px 0 8px;
+        }
+
+        #modalBody p { margin: 8px 0; line-height: 1.7; }
+
+        #modalBody pre {
+            background: #f4f4f4;
+            padding: 12px;
+            border-radius: 4px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+
+        #modalBody code { font-family: monospace; font-size: 0.9em; }
+
+        #modalBody ul, #modalBody ol { margin: 8px 0 8px 24px; line-height: 1.7; }
+
+        #modalBody a { color: #1a6bb5; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>MD-Searcher</h1>
+    <p>Search your Markdown knowledge base</p>
+</header>
+
+<div class="search-container">
+    <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Type keywords and press Enter or Search…" autofocus>
+        <button id="searchBtn">Search</button>
+    </div>
+    <div id="status"></div>
+</div>
+
+<div id="results" class="results-list"></div>
+
+<div class="upload-container">
+    <h2>Upload Markdown File</h2>
+    <div class="upload-box">
+        <input type="file" id="fileInput" accept=".md">
+        <button id="uploadBtn">Upload</button>
+    </div>
+    <div id="uploadStatus"></div>
+</div>
+
+<!-- Document modal -->
+<div id="modal" role="dialog" aria-modal="true">
+    <div id="modalContent">
+        <button id="modalClose" aria-label="Close">&times;</button>
+        <div id="modalBody"></div>
+    </div>
+</div>
+
+<script>
+    const searchInput = document.getElementById('searchInput');
+    const searchBtn   = document.getElementById('searchBtn');
+    const resultsDiv  = document.getElementById('results');
+    const statusDiv   = document.getElementById('status');
+    const modal       = document.getElementById('modal');
+    const modalBody   = document.getElementById('modalBody');
+    const modalClose  = document.getElementById('modalClose');
+
+    const fileInput     = document.getElementById('fileInput');
+    const uploadBtn     = document.getElementById('uploadBtn');
+    const uploadStatus  = document.getElementById('uploadStatus');
+
+    function escapeHtml(text) {
+        return text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function doSearch() {
+        const query = searchInput.value.trim();
+        if (!query) {
+            resultsDiv.innerHTML = '';
+            statusDiv.textContent = '';
+            return;
+        }
+
+        statusDiv.textContent = 'Searching…';
+        resultsDiv.innerHTML = '';
+
+        fetch('/api/search?q=' + encodeURIComponent(query))
+            .then(function(res) { return res.json(); })
+            .then(function(results) {
+                if (results.length === 0) {
+                    statusDiv.textContent = 'No results found.';
+                    resultsDiv.innerHTML = '<div class="no-results">No documents matched your query.</div>';
+                    return;
+                }
+
+                statusDiv.textContent = 'Found ' + results.length + ' result(s).';
+                var html = '';
+                results.forEach(function(r) {
+                    html += '<div class="result-card" id="result-' + escapeHtml(r.id) + '">'
+                          + '<div class="result-title">'
+                          + '<a href="#" data-id="' + escapeHtml(r.id) + '">' + escapeHtml(r.title) + '</a>'
+                          + '<span class="result-score">score: ' + r.score + '</span>'
+                          + '</div>'
+                          + '<div class="result-snippet">' + escapeHtml(r.snippet) + '</div>'
+                          + '</div>';
+                });
+                resultsDiv.innerHTML = html;
+
+                resultsDiv.querySelectorAll('a[data-id]').forEach(function(link) {
+                    link.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        openDocument(this.getAttribute('data-id'));
+                    });
+                });
+            })
+            .catch(function(err) {
+                statusDiv.textContent = 'Error: ' + err.message;
+            });
+    }
+
+    function openDocument(id) {
+        modalBody.innerHTML = '<p>Loading…</p>';
+        modal.classList.add('open');
+
+        fetch('/api/document/' + encodeURIComponent(id))
+            .then(function(res) {
+                if (!res.ok) { throw new Error('Document not found (HTTP ' + res.status + ')'); }
+                return res.text();
+            })
+            .then(function(html) {
+                var parser = new DOMParser();
+                var doc = parser.parseFromString(html, 'text/html');
+                modalBody.innerHTML = doc.body.innerHTML;
+            })
+            .catch(function(err) {
+                modalBody.innerHTML = '<p style="color:red;">' + escapeHtml(err.message) + '</p>';
+            });
+    }
+
+    searchBtn.addEventListener('click', doSearch);
+    searchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') { doSearch(); }
+    });
+
+    uploadBtn.addEventListener('click', function() {
+        const file = fileInput.files[0];
+        if (!file) {
+            uploadStatus.className = 'error';
+            uploadStatus.textContent = 'Please select a file first.';
+            return;
+        }
+
+        if (!file.name.toLowerCase().endsWith('.md')) {
+            uploadStatus.className = 'error';
+            uploadStatus.textContent = 'Only .md files are allowed.';
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        uploadStatus.className = '';
+        uploadStatus.textContent = 'Uploading…';
+
+        fetch('/api/upload', {
+            method: 'POST',
+            body: formData
+        })
+        .then(function(res) {
+            if (res.ok) {
+                uploadStatus.className = 'success';
+                uploadStatus.textContent = 'File uploaded and indexed successfully!';
+                fileInput.value = '';
+                // Optional: refresh search if there's a current query
+                if (searchInput.value.trim()) { doSearch(); }
+            } else {
+                return res.text().then(function(text) {
+                    throw new Error(text || 'Upload failed');
+                });
+            }
+        })
+        .catch(function(err) {
+            uploadStatus.className = 'error';
+            uploadStatus.textContent = 'Error: ' + err.message;
+        });
+    });
+
+    modalClose.addEventListener('click', function() {
+        modal.classList.remove('open');
+        modalBody.innerHTML = '';
+    });
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            modal.classList.remove('open');
+            modalBody.innerHTML = '';
+        }
+    });
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            modal.classList.remove('open');
+            modalBody.innerHTML = '';
+        }
+    });
+</script>
+</body>
+</html>
